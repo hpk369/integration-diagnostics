@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # hashFiles() is not allowed in a job-level `if`, so detect the stack in a step
+  # and let the language jobs read the outputs.
+  detect:
+    name: Detect stack
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.stack.outputs.python }}
+      node: ${{ steps.stack.outputs.node }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: stack
+        run: |
+          echo "python=$([ -f pyproject.toml ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "node=$([ -f package.json ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  changelog:
+    name: Changelog entries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test the changelog tool
+        run: python3 -m unittest discover -s tests -p "test_changelog*.py"
+      - name: Validate entries
+        run: python3 .claude/skills/changelog/changelog.py validate
+      - name: Require a changelog entry
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
+            | grep -q '^changelog/entries/CL-' \
+            || { echo "Add a changelog entry with the changelog skill"; exit 1; }
+
+  diagrams:
+    name: Code diagrams
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate fresh diagrams from the code
+        run: python3 .claude/skills/changelog/changelog.py diagrams
+      - name: Show diagrams in the run summary
+        run: cat docs/diagrams/architecture.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload diagrams
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-diagrams
+          path: docs/diagrams/
+      - name: Fail if the committed diagrams are stale
+        run: |
+          git diff --exit-code -- docs/diagrams/ \
+            || { echo "::error::Diagrams are out of date. Run: python3 .claude/skills/changelog/changelog.py diagrams, then commit docs/diagrams/"; exit 1; }
+          test -z "$(git status --porcelain -- docs/diagrams/)" \
+            || { echo "::error::docs/diagrams/architecture.md is not committed"; exit 1; }
+
+  python:
+    name: Python (ruff, mypy, pytest)
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.python == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy .
+      - run: uv run pytest
+
+  node:
+    name: Node (lint, typecheck, test)
+    runs-on: ubuntu-latest
+    needs: detect
+    if: needs.detect.outputs.node == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
