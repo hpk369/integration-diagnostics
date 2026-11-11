@@ -1,13 +1,26 @@
 # Project
-Part of a Customer Engineer portfolio. Test data comes from the customer-profiles repo:
-three fictional customers (Fernhollow Financial, Cedarline Health Network, Relaypoint).
-`scripts/fetch-customer-data.sh` copies it into data/customer-profiles/ (gitignored).
+P1 of a Customer Engineer portfolio: Integration Diagnostics Extractor.
+`acme_shield/` is a thin fictional SaaS that produces evidence; `diagx/` turns evidence
+(HAR, SAML, JWT, logs, webhook records) into a diagnosis and an escalation report.
+Tenants are synthetic (Fernhollow Financial, Cedarline Health Network, Relaypoint).
 SPEC.md is the source of truth for scope. Anything not in SPEC.md is out of scope.
+backlog/ holds the tickets. backlog/README.md explains the workflow.
+
+# Learning mode (read this first)
+I'm using this project to learn to code. Tickets in backlog/ say `Owner: you` or `Owner: Claude`.
+- On `Owner: you` tickets, do NOT write the implementation. Explain concepts, answer questions,
+  and give hints in order: H1 direction, H2 pseudo-code, H3 skeleton with blanks. Write the
+  full code only when I say "give me the solution", and then explain it line by line.
+- The tests in tests/ for a ticket are its acceptance criteria. Never edit them to make code
+  pass. If a test looks wrong, say so and stop.
+- On `Owner: Claude` tickets, normal rules apply.
 
 # Commands
-- Install: uv sync / npm ci
-- Test: uv run pytest / npm test
-- Lint and types: uv run ruff check . && uv run mypy . / npm run lint && npm run typecheck
+- Install: make install (uv sync + pre-commit hooks)
+- Everything CI checks: make check
+- Test: uv run pytest   (one ticket: uv run pytest tests/acme_shield/test_auth.py)
+- Run Acme Shield: make run, then http://127.0.0.1:8000/docs
+- Lint and types: uv run ruff check . && uv run mypy .
 - Changelog: python3 .claude/skills/changelog/changelog.py --help
 - Changelog tool tests: python3 -m unittest discover -s tests -p "test_changelog*.py"
 - Code diagrams: python3 .claude/skills/changelog/changelog.py diagrams (writes docs/diagrams/)

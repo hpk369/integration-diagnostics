@@ -1,0 +1,24 @@
+# Synthetic tenants only. Keys are low-entropy placeholders: acme_<env>_<32 hex>.
+tenants:
+  - tenant_id: fernhollow
+    name: Fernhollow Financial
+    billing_status: active
+    api_keys:
+      - key: acme_live_00000000000000000000000000000f01
+        env: live
+      - key: acme_test_00000000000000000000000000000f02
+        env: test
+
+  - tenant_id: cedarline
+    name: Cedarline Health Network
+    billing_status: active
+    api_keys:
+      - key: acme_live_00000000000000000000000000000c01
+        env: live
+
+  - tenant_id: relaypoint
+    name: Relaypoint
+    billing_status: suspended
+    api_keys:
+      - key: acme_live_00000000000000000000000000000a01
+        env: live
