@@ -1,14 +1,21 @@
-# <Project name>
+# Integration Diagnostics Extractor
 
-> One sentence: what this does, for which fictional customer, and the outcome it improves.
+> Turns the evidence customers attach to SSO and API tickets (HAR files, SAML responses, JWTs,
+> logs, webhook records) into a cited diagnosis, a customer reply and an escalation report.
+
+**Status:** in progress. Work is tracked as tickets in [backlog/](backlog/README.md).
 
 Part of my Customer Engineer portfolio, built from
 [ce-portfolio-template](https://github.com/hpk369/ce-portfolio-template).
-All customer data is synthetic (Fernhollow Financial, Cedarline Health Network, Relaypoint).
+All customer data is synthetic: the fictional SaaS "Acme Shield" and its tenants Fernhollow
+Financial, Cedarline Health Network and Relaypoint.
 
 ## The problem
 
-<!-- Two or three sentences in the customer's words: who is stuck, what it costs them today. -->
+"SSO broke this morning for everyone. HAR attached." A support engineer spends the first
+20 minutes of a ticket like that decoding, comparing and counting before any real thinking
+starts. This tool does that part deterministically, and uses an LLM only to weigh the
+findings and explain them. When it isn't sure, it says so.
 
 ## Demo
 
@@ -33,9 +40,10 @@ The code-level views (components, classes, call graph) are generated on every co
 ## Run it locally
 
 ```bash
-cp .env.example .env                  # add this project's own API key
-scripts/fetch-customer-data.sh        # synthetic customer profiles into data/
-uv sync && uv run pytest              # or: npm ci && npm test
+cp .env.example .env                  # this project's own API key (needed from week 4)
+make install                          # uv sync + pre-commit hooks
+make check                            # ruff, mypy, pytest
+make run                              # Acme Shield on http://127.0.0.1:8000/docs
 ```
 
 <!-- Then the one command that starts the demo, and what to click or send to see it work. -->
